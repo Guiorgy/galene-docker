@@ -1,5 +1,0 @@
-{
-    "canonicalHost": "galene.example.com",
-    "proxyURL": "https://galene.example.com/",
-    "admin":[{"username":"admin","password":"mysecretpassword"}]
-}
