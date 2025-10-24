@@ -1,49 +1,51 @@
-ARG DIR=/go/src/galene
-ARG VERSION=0.7.2
-ARG WAIT_VERSION=2.9.0
+ARG ALPINE_VERSION=3.22
+ARG GO_VERSION=1.24.9
 
-FROM golang:alpine AS builder
-ARG DIR
-ARG VERSION
+ARG WAIT_VERSION=2.12.1
+
+ARG GALENE_VERSION=1.0
+ARG RELEASE_TAG=1
+
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
+WORKDIR /go/src/galene
+
+ARG GALENE_VERSION
 
 RUN apk --no-cache add git \
-    && git clone --depth 1 --branch galene-$VERSION https://github.com/jech/galene.git ${DIR}
-WORKDIR ${DIR}
+    && git clone --depth 1 --branch galene-$GALENE_VERSION https://github.com/jech/galene.git ./
 RUN CGO_ENABLED=0 go build -ldflags='-s -w'
 
-FROM alpine
-ARG DIR
-ARG VERSION
-ARG VCS_REF=$SOURCE_COMMIT
-ARG TARGET_DIR=/opt/galene
+FROM alpine:${ALPINE_VERSION}
+WORKDIR /opt/galene
+
 ARG WAIT_VERSION
-ARG WAIT_BIN=/docker-init.d/01-docker-compose-wait
 
-RUN mkdir -p ${TARGET_DIR}/groups/
+ARG GIT_COMMIT="N/A"
+ARG GALENE_VERSION
+ARG RELEASE_TAG
 
-LABEL maintainer="galene@flexoft.net"
-LABEL org.label-schema.schema-version="1.0"
-LABEL org.label-schema.name="galene"
-LABEL org.label-schema.description="Docker image for the Galène videoconference server"
-LABEL org.label-schema.url="http://galena.org/"
-LABEL org.label-schema.vcs-url="https://github.com/deburau/galene"
-LABEL org.label-schema.vcs-ref="${VCS_REF}"
-LABEL org.label-schema.vendor="jech"
-LABEL org.label-schema.version="${VERSION}"
-LABEL org.label-schema.docker.cmd="docker run -it -p 8443:8443 deburau/galene:latest -turn ''"
+RUN mkdir groups/
 
 EXPOSE 8443
 EXPOSE 1194/tcp
 EXPOSE 1194/udp
 
-COPY --from=builder ${DIR}/LICENCE ${TARGET_DIR}/
-COPY --from=builder ${DIR}/galene ${TARGET_DIR}/
-COPY --from=builder ${DIR}/static/ ${TARGET_DIR}/static/
+COPY --from=build /go/src/galene/LICENCE /go/src/galene/galene ./
+COPY --from=build /go/src/galene/static/ ./static/
 
 COPY root/ /
 
-ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait ${WAIT_BIN}
-RUN chmod 0755 ${WAIT_BIN}
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait /docker-init.d/01-docker-compose-wait
+RUN chmod 0755 /docker-init.d/01-docker-compose-wait
 
-WORKDIR ${TARGET_DIR}
 ENTRYPOINT ["/docker-init.sh"]
+
+LABEL maintainer="galene@flexoft.net" \
+    org.label-schema.schema-version="1.0" \
+    org.label-schema.name="galene" \
+    org.label-schema.description="Docker image for the Galène videoconference server" \
+    org.label-schema.url="http://galena.org/" \
+    org.label-schema.vcs-url="https://github.com/Guiorgy/galene" \
+    org.label-schema.vcs-ref="${GIT_COMMIT}" \
+    org.label-schema.vendor="jech" \
+    org.label-schema.version="${GALENE_VERSION}-${RELEASE_TAG}"
