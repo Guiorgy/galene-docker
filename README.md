@@ -33,6 +33,15 @@ docker build \
   -t galene:1.0 -f Dockerfile .
 ```
 
+If the target OS/architecture is different (e.g. Linux arm64)
+
+```
+docker build \
+  --platform=linux/arm64 \
+  --build-arg GIT_COMMIT="$(git describe --always --exclude=*)" \
+  -t galene:latest -f Dockerfile .
+```
+
 ## How to use this image
 
 ```shell

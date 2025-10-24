@@ -6,14 +6,16 @@ ARG WAIT_VERSION=2.12.1
 ARG GALENE_VERSION=1.0
 ARG RELEASE_TAG=1
 
-FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
 WORKDIR /go/src/galene
 
+ARG TARGETOS
+ARG TARGETARCH
 ARG GALENE_VERSION
 
 RUN apk --no-cache add git \
     && git clone --depth 1 --branch galene-$GALENE_VERSION https://github.com/jech/galene.git ./
-RUN CGO_ENABLED=0 go build -ldflags='-s -w'
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags='-s -w'
 
 FROM alpine:${ALPINE_VERSION}
 WORKDIR /opt/galene
