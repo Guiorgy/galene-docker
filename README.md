@@ -1,8 +1,3 @@
-<!--
-![Docker Pulls](https://img.shields.io/docker/pulls/deburau/galene-docker?style=plastic)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/deburau/galene-docker?style=plastic)
-![GitHub](https://img.shields.io/github/license/deburau/galene-docker?style=plastic)
--->
 # Galène videoconferencing server
 
 Galène is a videoconferencing server that is easy to deploy (just copy a few files and run the binary) and that requires moderate server resources. It was originally designed for lectures and conferences (where a single speaker streams audio and video to hundreds or thousands of users), but later evolved to be useful for student practicals (where users are divided into many small groups), and meetings (where a few dozen users interact with each other).
@@ -13,28 +8,43 @@ You can find out more on the [Galène website](https://galene.org/).
 
 Source code for this image is available on [GitHub](https://github.com/deburau/galene-docker).
 
-The image itself resides on [Docker Hub](https://hub.docker.com/r/deburau/galene).
-
 ## About this image
 
-This image is based on the [galene44 image](https://github.com/garage44/galene). But this image is self contained (you do need to clone the git repo) and it is small, the size is only 15.6MB.
+This image is based on the work by [deburau](https://github.com/deburau/galene-docker).
 
 Configuration is possible through environment variables.
 
+## How to build this image
+
+```shell
+docker build --build-arg GIT_COMMIT="$(git describe --always --exclude=*)" -t galene:latest -f Dockerfile .
+```
+
+Or using specific versions
+
+```shell
+docker build \
+  --build-arg ALPINE_VERSION=3.22 \
+  --build-arg GO_VERSION=1.24.9 \
+  --build-arg WAIT_VERSION=2.12.1 \
+  --build-arg GALENE_VERSION=1.0 \
+  --build-arg RELEASE_TAG=1 \
+  --build-arg GIT_COMMIT="$(git describe --always --exclude=*)"
+  -t galene:1.0 -f Dockerfile .
+```
+
 ## How to use this image
 
-```bash
-docker run -it -p 8443:8443 -e GALENE_TURN= deburau/galene:latest
+```shell
+docker run -it -p 8443:8443 -e GALENE_TURN= galene:latest
 ```
 
 Or using docker-compose
 
 ```yaml
-version: '3'
-
 services:
   galene:
-    image: deburau/galene:latest
+    image: galene:latest
     container_name: galene
     restart: always
     ports:
@@ -54,8 +64,8 @@ services:
 
 If you want to use the built in turn server, you have to run the image in host mode:
 
-```bash
-docker run -it --network host -e GALENE_TURN=$(curl -4 ifconfig.co):1194 deburau/galene:latest
+```shell
+docker run -it --network host -e GALENE_TURN=$(curl -4 ifconfig.co):1194 galene:latest
 ```
 
 You can replace $(curl -4 ifconfig.co) with your server's ip address.
@@ -63,11 +73,9 @@ You can replace $(curl -4 ifconfig.co) with your server's ip address.
 Docker-compose:
 
 ```yaml
-version: '3'
-
 services:
   galene:
-    image: deburau/galene:latest
+    image: galene:latest
     container_name: galene
     restart: always
     network_mode: host
@@ -79,7 +87,7 @@ services:
 
 To configure groups, passwords, ice servers etc. you can use volume mounts.
 
-```bash
+```shell
 mkdir data groups
 docker run -it \
   -p 8443:8443 \
@@ -87,17 +95,15 @@ docker run -it \
   -e GALENE_DATA=/data \
   -e GALENE_GROUPS=/groups \
   -v $PWD/data:/data \
-  -v $PWD/groups:/groups deburau/galene:latest
+  -v $PWD/groups:/groups galene:latest
 ```
 
 Docker-compose:
 
 ```yaml
-version: '3'
-
 services:
   galene:
-    image: deburau/galene:latest
+    image: galene:latest
     container_name: galene
     restart: always
     volumes:
@@ -113,14 +119,14 @@ services:
 
 ### Setting the admin password
 
-```bash
+```shell
 echo "admin:topsecret" > data/passwd
 ```
 
 
 ### Creating a group
 
-```bash
+```shell
 cat > groups/mygroup.json <<EOF
 {
     "codecs": ["vp8", "vp9", "opus"],
@@ -135,7 +141,7 @@ EOF
 
 If you are running your own turn server, eg. coTURN, configure it like
 
-```bash
+```shell
 cat > data/ice-servers.json <<EOF
 [
     {
@@ -203,11 +209,9 @@ Then create `config.json` in your config directory, e.g. `data/config.json` (rep
 After that, create the `docker-compose.yml` (again, replace the domain name)
 
 ```yaml
-version: '3'
-
 services:
   galene:
-    image: deburau/galene:latest
+    image: galene:latest
     container_name: galene
     restart: always
     volumes:
@@ -238,13 +242,13 @@ services:
 
 Be sure to block access to the port 4080 (or any port you choose) from the internet. This port must be reachable from the traefik container. For me, running on Ubuntu, I used the command
 
-```sh
+```shell
 sudo ufw allow proto tcp from 172.16.0.0/12 to any port 4080
 ```
 
 Also the turn port (1194 for me) should be reachable from the internet
 
-```sh
+```shell
 sudo ufw allow port 1194
 ```
 
