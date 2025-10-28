@@ -8,7 +8,7 @@ ARG RELEASE_TAG=1
 
 FROM ghcr.io/ufoscout/docker-compose-wait:${WAIT_VERSION} AS wait
 
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
+FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
 WORKDIR /go/src/galene
 
 ARG TARGETOS
@@ -16,13 +16,11 @@ ARG TARGETARCH
 ARG GALENE_VERSION
 
 RUN apk --no-cache add git \
-    && git clone --depth 1 --branch galene-$GALENE_VERSION https://github.com/jech/galene.git ./
+    && git clone --depth 1 --branch galene-${GALENE_VERSION} https://github.com/jech/galene.git ./
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags='-s -w'
 
 FROM alpine:${ALPINE_VERSION}
 WORKDIR /opt/galene
-
-ARG WAIT_VERSION
 
 ARG GIT_COMMIT="N/A"
 ARG GALENE_VERSION
@@ -34,14 +32,13 @@ EXPOSE 8443
 EXPOSE 1194/tcp
 EXPOSE 1194/udp
 
+COPY --from=wait /wait /wait
+
 COPY --from=build /go/src/galene/LICENCE /go/src/galene/galene ./
 COPY --from=build /go/src/galene/static/ ./static/
 
-COPY root/ /
-
-COPY --from=wait /wait /docker-init.d/01-docker-compose-wait
-
-ENTRYPOINT ["/docker-init.sh"]
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
 LABEL maintainer="galene@flexoft.net" \
     org.label-schema.schema-version="1.0" \

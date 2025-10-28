@@ -1,5 +1,5 @@
 # Force Unix style line endings for files that will be copied into the Docker image
-/root/** text eol=lf
+docker-entrypoint.sh text eol=lf
 
 # Auto detect text files and perform LF normalization on the rest
 * text=auto
