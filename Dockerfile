@@ -6,6 +6,8 @@ ARG WAIT_VERSION=2.12.1
 ARG GALENE_VERSION=1.0
 ARG RELEASE_TAG=1
 
+FROM ghcr.io/ufoscout/docker-compose-wait:${WAIT_VERSION} AS wait
+
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
 WORKDIR /go/src/galene
 
@@ -37,8 +39,7 @@ COPY --from=build /go/src/galene/static/ ./static/
 
 COPY root/ /
 
-ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait /docker-init.d/01-docker-compose-wait
-RUN chmod 0755 /docker-init.d/01-docker-compose-wait
+COPY --from=wait /wait /docker-init.d/01-docker-compose-wait
 
 ENTRYPOINT ["/docker-init.sh"]
 
